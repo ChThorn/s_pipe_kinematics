@@ -1,0 +1,9 @@
+# Request
+float64[3] position     # x, y, z position in mm
+float64[4] orientation  # x, y, z, w quaternion orientation
+float64[6] initial_guess # Initial joint angles guess in degrees (optional)
+---
+# Response
+float64[6] joint_angles  # Calculated joint angles in degrees
+bool success             # Whether the IK calculation was successful
+string message           # Error or status message

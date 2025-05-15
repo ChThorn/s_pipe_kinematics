@@ -1,0 +1,7 @@
+
+# Request
+float64[6] joint_angles # Joint angles in degrees
+---
+# Response
+float64[3] position     # x, y, z position in mm
+float64[4] orientation  # x, y, z, w quaternion orientation
