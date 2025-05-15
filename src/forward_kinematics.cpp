@@ -60,6 +60,15 @@ Eigen::Matrix4d ForwardKinematics::compute(const std::vector<double>& joint_angl
         Eigen::Matrix4d currentTransform = calculateTransformMatrix(currentDH);
         result = result * currentTransform;
     }
+
+    // Apply the fixed RZ rotation of -0.03° at the end
+    Eigen::Matrix4d rz_correction = Eigen::Matrix4d::Identity();
+    rz_correction(0, 0) = cos(deg2rad(-0.03));
+    rz_correction(0, 1) = -sin(deg2rad(-0.03));
+    rz_correction(1, 0) = sin(deg2rad(-0.03));
+    rz_correction(1, 1) = cos(deg2rad(-0.03));
+    
+    result = result * rz_correction;
     
     return result;
 }

@@ -1,4 +1,4 @@
-#include <memory>
+// #include <memory>
 #include <vector>
 #include <string>
 
@@ -11,6 +11,34 @@
 #include <tf2_eigen/tf2_eigen.hpp>
 
 using namespace std::placeholders;
+
+// Helper function to extract Euler angles from rotation matrix for debugging
+std::array<double, 3> getEulerAngles(const Eigen::Matrix3d& rotation) {
+    // Extract rotation around Z axis for small angles
+    double rz = -atan2(rotation(0, 1), rotation(0, 0));
+    
+    // If angles are very small, return them directly
+    if (fabs(rotation(0, 1)) < 0.01 && fabs(rotation(1, 0)) < 0.01) {
+        return {0.0, 0.0, s_pipe::rad2deg(rz)};
+    }
+    
+    // Otherwise use full Euler extraction for complex orientations
+    Eigen::Vector3d euler = rotation.eulerAngles(2, 1, 0);
+    
+    // Convert to degrees and normalize
+    std::array<double, 3> result;
+    result[0] = s_pipe::rad2deg(euler[2]); // Roll (X)
+    result[1] = s_pipe::rad2deg(euler[1]); // Pitch (Y)
+    result[2] = s_pipe::rad2deg(euler[0]); // Yaw (Z)
+    
+    // Normalize to manufacturer's convention
+    for (int i = 0; i < 3; i++) {
+        while (result[i] > 180.0) result[i] -= 360.0;
+        while (result[i] < -180.0) result[i] += 360.0;
+    }
+    
+    return result;
+}
 
 class ForwardKinematicsService : public rclcpp::Node
 {
@@ -52,6 +80,9 @@ private:
       // Extract rotation matrix
       Eigen::Matrix3d rotation = ee_pose.block<3, 3>(0, 0);
       
+      // Get Euler angles for debugging
+      std::array<double, 3> euler = getEulerAngles(rotation);
+      
       // Convert rotation matrix to quaternion
       Eigen::Quaterniond quaternion(rotation);
       
@@ -69,6 +100,15 @@ private:
       RCLCPP_INFO(this->get_logger(), 
                  "FK computed successfully. Position: [%.2f, %.2f, %.2f]",
                  position.x(), position.y(), position.z());
+      
+      // Log Euler angles for debugging and validation
+      RCLCPP_DEBUG(this->get_logger(), 
+                 "Orientation (Euler RPY): [%.2f, %.2f, %.2f]",
+                 euler[0], euler[1], euler[2]);
+
+        RCLCPP_DEBUG(this->get_logger(), 
+            "Quaternion values [x,y,z,w]: [%.8f, %.8f, %.8f, %.8f]",
+            quaternion.x(), quaternion.y(), quaternion.z(), quaternion.w());
     }
     catch (const std::exception& e) {
       RCLCPP_ERROR(this->get_logger(), "Error computing forward kinematics: %s", e.what());
